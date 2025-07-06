@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hamilton Virtual Tour</title>
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        font-family: 'Arial', sans-serif;
+      }
+      #viewer {
+        width: 100%;
+        height: 100%;
+      }
+      #home {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+      }
+      #home h1 {
+        font-size: 3rem;
+        margin-bottom: 2rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      }
+      #map {
+        width: 80%;
+        height: 60%;
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        border: 3px solid #ecf0f1;
+        position: relative;
+        overflow: hidden;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      }
+      
+      .map-area {
+        position: absolute;
+        border: 3px solid #fff;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.4s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        font-size: 16px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+      }
+      
+      .map-area:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 25px rgba(255,255,255,0.9);
+        z-index: 10;
+        border-color: #f39c12;
+      }
+      
+      .downtown-area {
+        top: 30%;
+        left: 25%;
+        width: 50%;
+        height: 40%;
+        background: linear-gradient(45deg, #e74c3c, #c0392b);
+      }
+      
+      .map-legend {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 13px;
+        backdrop-filter: blur(10px);
+      }
+      
+      .legend-item {
+        display: flex;
+        align-items: center;
+        margin: 8px 0;
+      }
+      
+      .legend-color {
+        width: 25px;
+        height: 18px;
+        margin-right: 10px;
+        border-radius: 4px;
+        border: 1px solid rgba(255,255,255,0.3);
+      }
+      .area-btn {
+        margin: 20px;
+        padding: 15px 30px;
+        font-size: 18px;
+        cursor: pointer;
+        background: linear-gradient(45deg, #f39c12, #e67e22);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      }
+      .area-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+      }
+      #controls {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+      }
+      #controls button {
+        margin: 3px;
+        padding: 8px 15px;
+        cursor: pointer;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        transition: all 0.2s ease;
+      }
+      #controls button:hover {
+        background: #2980b9;
+        transform: scale(1.05);
+      }
+      #filters {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+      }
+      #filters label {
+        display: block;
+        margin: 8px 0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      #filters label:hover {
+        color: #3498db;
+      }
+      .hotspot {
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        cursor: pointer;
+        z-index: 100;
+        border: 3px solid white;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+      }
+      .hotspot:hover {
+        transform: scale(1.3);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+      }
+      .hotspot.landmarks {
+        background: linear-gradient(45deg, #e74c3c, #c0392b);
+      }
+      .hotspot.nature {
+        background: linear-gradient(45deg, #27ae60, #2ecc71);
+      }
+      .hotspot.heritage {
+        background: linear-gradient(45deg, #8e44ad, #9b59b6);
+      }
+      .hotspot.waterfront {
+        background: linear-gradient(45deg, #3498db, #2980b9);
+      }
+      .hotspot-info {
+        position: absolute;
+        background: rgba(0,0,0,0.9);
+        color: white;
+        padding: 10px 15px;
+        display: none;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        z-index: 101;
+        left: 30px;
+        top: -15px;
+        min-width: 200px;
+        backdrop-filter: blur(10px);
+      }
+      .hotspot-info h4 {
+        margin: 0 0 5px 0;
+        color: #3498db;
+      }
+      .hotspot-info p {
+        margin: 0;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .tour-info {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-size: 14px;
+        display: none;
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="home">
+      <h1>🏛️ Hamilton Virtual Tour</h1>
+      <div id="map">
+        <div class="map-area downtown-area" onclick="startTour()">
+          <div>
+            <div>🚀 START</div>
+            <div>VIRTUAL TOUR</div>
+          </div>
+        </div>
+        <div class="map-legend">
+          <div class="legend-item">
+            <div class="legend-color" style="background: linear-gradient(45deg, #e74c3c, #c0392b);"></div>
+            <span>Historic Landmarks</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: linear-gradient(45deg, #27ae60, #2ecc71);"></div>
+            <span>Parks & Nature</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: linear-gradient(45deg, #8e44ad, #9b59b6);"></div>
+            <span>Heritage Sites</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: linear-gradient(45deg, #3498db, #2980b9);"></div>
+            <span>Waterfront</span>
+          </div>
+        </div>
+      </div>
+      <button class="area-btn" onclick="startTour()">
+        🌟 Begin Your Hamilton Adventure
+      </button>
+      <p style="text-align: center; color: rgba(255,255,255,0.8); margin-top: 20px; font-size: 16px;">
+        Discover Hamilton's rich history, stunning waterfront, and vibrant culture through immersive 360° experiences
+      </p>
+    </div>
+    <div id="viewer" style="display: none">
+      <div id="controls">
+        <button onclick="playGuidedTour()">▶️ Guided Tour</button>
+        <button onclick="stopGuidedTour()">⏹️ Stop</button>
+        <button onclick="goHome()">🏠 Home</button>
+        <button onclick="changeImage(-1)">⬅️ Previous</button>
+        <button onclick="changeImage(1)">➡️ Next</button>
+      </div>
+      <div id="filters">
+        <label>
+          <input type="checkbox" id="landmarks" checked onchange="updateHotspots()" />
+          🏛️ Historic Landmarks
+        </label>
+        <label>
+          <input type="checkbox" id="nature" checked onchange="updateHotspots()" />
+          🌳 Parks & Nature
+        </label>
+        <label>
+          <input type="checkbox" id="heritage" checked onchange="updateHotspots()" />
+          🏰 Heritage Sites
+        </label>
+        <label>
+          <input type="checkbox" id="waterfront" checked onchange="updateHotspots()" />
+          🌊 Waterfront
+        </label>
+      </div>
+      <div id="tour-info" class="tour-info">
+        Click and drag to look around • Scroll to zoom • Click hotspots for information
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <script>
+      const viewer = document.getElementById("viewer");
+      const home = document.getElementById("home");
+      const tourInfo = document.getElementById("tour-info");
+      let scene,
+        camera,
+        renderer,
+        sphere,
+        hotspots = [];
+      let currentImageIndex = 0;
+      let isTourPlaying = false;
+      let lon = 0,
+        lat = 0,
+        phi = 0,
+        theta = 0;
+      let isUserInteracting = false;
+      let lastMouseX = 0,
+        lastMouseY = 0;
+
+      // Updated images with placeholder paths
+      const images = [
+        { url: "/static/images/DJI_0633.JPG", hotspots: [], title: "Downtown Hamilton Core" },
+        { url: "/static/images/DJI_0635.JPG", hotspots: [], title: "Waterfront District" },
+        { url: "/static/images/DJI_0638.JPG", hotspots: [], title: "Historic Quarter" },
+        { url: "/static/images/DJI_0639.JPG", hotspots: [], title: "Parks & Recreation" },
+      ];
+
+      // More contextual and meaningful hotspot data
+      const hotspotData = [
+        // Downtown Core - Image 0
+        {
+          id: 1,
+          name: "Hamilton City Hall",
+          category: "landmarks",
+          lon: 0,
+          lat: 10,
+          imageIndex: 0,
+          info: "Built in 1960, this modernist building serves as the seat of Hamilton's municipal government and features distinctive architecture.",
+        },
+        {
+          id: 2,
+          name: "Gore Park",
+          category: "nature",
+          lon: 45,
+          lat: 5,
+          imageIndex: 0,
+          info: "Hamilton's central downtown park, established in 1860. Popular for events, festivals, and as a meeting place for locals.",
+        },
+        {
+          id: 3,
+          name: "Hamilton Museum of Steam & Technology",
+          category: "heritage",
+          lon: -30,
+          lat: 15,
+          imageIndex: 0,
+          info: "National Historic Site showcasing Hamilton's industrial heritage with preserved 19th-century steam-powered waterworks.",
+        },
+        {
+          id: 4,
+          name: "Jackson Square",
+          category: "landmarks",
+          lon: 70,
+          lat: 0,
+          imageIndex: 0,
+          info: "Major shopping center and transit hub in downtown Hamilton, connecting to the Hamilton GO Centre.",
+        },
+        
+        // Waterfront - Image 1
+        {
+          id: 5,
+          name: "Hamilton Harbour",
+          category: "waterfront",
+          lon: 0,
+          lat: -20,
+          imageIndex: 1,
+          info: "Natural harbor providing shipping access to the Great Lakes and scenic views of the Toronto skyline across Lake Ontario.",
+        },
+        {
+          id: 6,
+          name: "Pier 4 Park",
+          category: "waterfront",
+          lon: 60,
+          lat: -10,
+          imageIndex: 1,
+          info: "Popular waterfront park with walking trails, fishing spots, and stunning views of Hamilton Harbour and downtown Toronto.",
+        },
+        {
+          id: 7,
+          name: "Bayfront Park",
+          category: "nature",
+          lon: -45,
+          lat: -5,
+          imageIndex: 1,
+          info: "Large waterfront park featuring walking paths, gardens, and excellent bird watching opportunities along the harbor.",
+        },
+        {
+          id: 8,
+          name: "HMCS Haida",
+          category: "heritage",
+          lon: 30,
+          lat: -25,
+          imageIndex: 1,
+          info: "Historic Royal Canadian Navy destroyer, now a museum ship and National Historic Site showcasing naval history.",
+        },
+        
+        // Historic Quarter - Image 2
+        {
+          id: 9,
+          name: "Dundurn Castle",
+          category: "heritage",
+          lon: -15,
+          lat: 20,
+          imageIndex: 2,
+          info: "1835 neoclassical mansion and National Historic Site, former home of Sir Allan MacNab, showcasing 19th-century life.",
+        },
+        {
+          id: 10,
+          name: "Art Gallery of Hamilton",
+          category: "landmarks",
+          lon: 40,
+          lat: 25,
+          imageIndex: 2,
+          info: "Oldest public art gallery in Ontario, featuring Canadian and international works with a focus on contemporary art.",
+        },
+        {
+          id: 11,
+          name: "Whitehern Historic House",
+          category: "heritage",
+          lon: -50,
+          lat: 10,
+          imageIndex: 2,
+          info: "1850s Georgian mansion preserved as a museum, showcasing three generations of the McQuesten family's life.",
+        },
+        {
+          id: 12,
+          name: "Hamilton Cemetery",
+          category: "heritage",
+          lon: 65,
+          lat: 15,
+          imageIndex: 2,
+          info: "Historic cemetery established in 1850, featuring beautiful Victorian monuments and notable Hamilton figures.",
+        },
+        
+        // Parks & Recreation - Image 3
+        {
+          id: 13,
+          name: "Royal Botanical Gardens",
+          category: "nature",
+          lon: 0,
+          lat: 30,
+          imageIndex: 3,
+          info: "Canada's largest botanical garden, featuring 2,700 acres of gardens, trails, and natural areas including the famous Rock Garden.",
+        },
+        {
+          id: 14,
+          name: "Cootes Paradise",
+          category: "nature",
+          lon: -40,
+          lat: 20,
+          imageIndex: 3,
+          info: "Largest wetland at the western end of Lake Ontario, important for migratory birds and featuring extensive boardwalks.",
+        },
+        {
+          id: 15,
+          name: "Dundurn Park",
+          category: "nature",
+          lon: 50,
+          lat: 25,
+          imageIndex: 3,
+          info: "Large urban park surrounding Dundurn Castle, featuring sports facilities, walking paths, and recreational activities.",
+        },
+        {
+          id: 16,
+          name: "McMaster University",
+          category: "landmarks",
+          lon: -25,
+          lat: 35,
+          imageIndex: 3,
+          info: "Prestigious research university established in 1887, known for its medical school and beautiful campus.",
+        },
+      ];
+
+      // Assign hotspots to images
+      hotspotData.forEach((hotspot) => {
+        images[hotspot.imageIndex].hotspots.push(hotspot);
+      });
+
+      function initViewer() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(
+          75,
+          window.innerWidth / window.innerHeight,
+          1,
+          1000
+        );
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 1);
+        viewer.appendChild(renderer.domElement);
+
+        loadCurrentImage();
+        
+        camera.position.set(0, 0, 0);
+        camera.lookAt(0, 0, 1);
+
+        window.addEventListener("resize", () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Mouse controls
+        renderer.domElement.addEventListener("mousedown", onMouseDown);
+        renderer.domElement.addEventListener("mousemove", onMouseMove);
+        renderer.domElement.addEventListener("mouseup", onMouseUp);
+        renderer.domElement.addEventListener("mouseleave", onMouseUp);
+        renderer.domElement.addEventListener("wheel", onMouseWheel);
+
+        // Touch controls
+        renderer.domElement.addEventListener("touchstart", onTouchStart);
+        renderer.domElement.addEventListener("touchmove", onTouchMove);
+        renderer.domElement.addEventListener("touchend", onTouchEnd);
+
+        // Show tour info
+        tourInfo.style.display = "block";
+        setTimeout(() => {
+          tourInfo.style.display = "none";
+        }, 5000);
+
+        updateHotspots();
+        animate();
+      }
+
+      function loadCurrentImage() {
+        const geometry = new THREE.SphereGeometry(500, 60, 40);
+        geometry.scale(-1, 1, 1);
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.load(
+          images[currentImageIndex].url,
+          (texture) => {
+            const material = new THREE.MeshBasicMaterial({ map: texture });
+            if (sphere) {
+              scene.remove(sphere);
+              sphere.geometry.dispose();
+              sphere.material.dispose();
+            }
+            sphere = new THREE.Mesh(geometry, material);
+            scene.add(sphere);
+            console.log(`Loaded: ${images[currentImageIndex].title}`);
+          },
+          undefined,
+          (error) => {
+            console.error("Error loading texture:", error);
+            // Create fallback colored sphere
+            const material = new THREE.MeshBasicMaterial({ color: 0x4a90e2 });
+            if (sphere) {
+              scene.remove(sphere);
+              sphere.geometry.dispose();
+              sphere.material.dispose();
+            }
+            sphere = new THREE.Mesh(geometry, material);
+            scene.add(sphere);
+          }
+        );
+      }
+
+      function createHotspot(hotspot) {
+        const container = document.createElement("div");
+        container.className = `hotspot ${hotspot.category}`;
+        container.dataset.id = hotspot.id;
+        
+        const info = document.createElement("div");
+        info.className = "hotspot-info";
+        info.innerHTML = `
+          <h4>${hotspot.name}</h4>
+          <p>${hotspot.info}</p>
+        `;
+        container.appendChild(info);
+        viewer.appendChild(container);
+
+        container.addEventListener("mouseover", () => {
+          info.style.display = "block";
+        });
+        container.addEventListener("mouseout", () => {
+          info.style.display = "none";
+        });
+
+        container.addEventListener("click", () => {
+          // Add click interaction - could focus on hotspot or show more info
+          console.log(`Clicked on: ${hotspot.name}`);
+        });
+
+        return { element: container, data: hotspot };
+      }
+
+      function updateHotspots() {
+        hotspots.forEach((h) => h.element.remove());
+        hotspots = [];
+
+        const filters = {
+          landmarks: document.getElementById("landmarks").checked,
+          nature: document.getElementById("nature").checked,
+          heritage: document.getElementById("heritage").checked,
+          waterfront: document.getElementById("waterfront").checked,
+        };
+
+        images[currentImageIndex].hotspots.forEach((hotspot) => {
+          if (filters[hotspot.category]) {
+            hotspots.push(createHotspot(hotspot));
+          }
+        });
+
+        updateHotspotPositions();
+      }
+
+      function updateHotspotPositions() {
+        hotspots.forEach((h) => {
+          const vector = new THREE.Vector3();
+          const phi = THREE.MathUtils.degToRad(90 - h.data.lat);
+          const theta = THREE.MathUtils.degToRad(h.data.lon + lon);
+          vector.setFromSphericalCoords(100, phi, theta);
+          vector.applyQuaternion(camera.quaternion);
+          const pos = vector.project(camera);
+          const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
+          const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
+          h.element.style.left = `${x}px`;
+          h.element.style.top = `${y}px`;
+          h.element.style.display = pos.z > 0 ? "block" : "none";
+        });
+      }
+
+      function onMouseDown(event) {
+        event.preventDefault();
+        isUserInteracting = true;
+        isTourPlaying = false;
+        lastMouseX = event.clientX;
+        lastMouseY = event.clientY;
+        renderer.domElement.style.cursor = "grabbing";
+      }
+
+      function onMouseMove(event) {
+        if (!isUserInteracting) return;
+        event.preventDefault();
+        
+        const deltaX = event.clientX - lastMouseX;
+        const deltaY = event.clientY - lastMouseY;
+        
+        lon -= deltaX * 0.5;
+        lat += deltaY * 0.5;
+        lat = Math.max(-85, Math.min(85, lat));
+        
+        lastMouseX = event.clientX;
+        lastMouseY = event.clientY;
+      }
+
+      function onMouseUp(event) {
+        event.preventDefault();
+        isUserInteracting = false;
+        renderer.domElement.style.cursor = "grab";
+      }
+
+      function onTouchStart(event) {
+        event.preventDefault();
+        if (event.touches.length === 1) {
+          isUserInteracting = true;
+          isTourPlaying = false;
+          lastMouseX = event.touches[0].clientX;
+          lastMouseY = event.touches[0].clientY;
+        }
+      }
+
+      function onTouchMove(event) {
+        if (!isUserInteracting || event.touches.length !== 1) return;
+        event.preventDefault();
+        
+        const deltaX = event.touches[0].clientX - lastMouseX;
+        const deltaY = event.touches[0].clientY - lastMouseY;
+        
+        lon -= deltaX * 0.5;
+        lat += deltaY * 0.5;
+        lat = Math.max(-85, Math.min(85, lat));
+        
+        lastMouseX = event.touches[0].clientX;
+        lastMouseY = event.touches[0].clientY;
+      }
+
+      function onTouchEnd(event) {
+        event.preventDefault();
+        isUserInteracting = false;
+      }
+
+      function onMouseWheel(event) {
+        event.preventDefault();
+        camera.fov += event.deltaY * 0.05;
+        camera.fov = THREE.MathUtils.clamp(camera.fov, 10, 75);
+        camera.updateProjectionMatrix();
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        
+        phi = THREE.MathUtils.degToRad(90 - lat);
+        theta = THREE.MathUtils.degToRad(lon);
+        camera.position.setFromSphericalCoords(1, phi, theta);
+        camera.lookAt(0, 0, 0);
+        updateHotspotPositions();
+        renderer.render(scene, camera);
+        
+        if (typeof TWEEN !== 'undefined') {
+          TWEEN.update();
+        }
+      }
+
+      function changeImage(direction) {
+        currentImageIndex = (currentImageIndex + direction + images.length) % images.length;
+        loadCurrentImage();
+        updateHotspots();
+        
+     
+        tourInfo.textContent = `Now viewing: ${images[currentImageIndex].title}`;
+        tourInfo.style.display = "block";
+        setTimeout(() => {
+          tourInfo.style.display = "none";
+        }, 3000);
+      }
+
+      function startTour() {
+        console.log("Starting Hamilton Virtual Tour");
+        home.style.display = "none";
+        viewer.style.display = "block";
+        initViewer();
+      }
+
+      function goHome() {
+        home.style.display = "flex";
+        viewer.style.display = "none";
+        stopGuidedTour();
+        
+        // Clean up Three.js resources
+        if (renderer) {
+          viewer.removeChild(renderer.domElement);
+          renderer.dispose();
+        }
+        if (sphere) {
+          sphere.geometry.dispose();
+          sphere.material.dispose();
+        }
+        
+        // Clean up hotspots
+        hotspots.forEach((h) => h.element.remove());
+        hotspots = [];
+      }
+
+      function playGuidedTour() {
+        if (isTourPlaying) return;
+        isTourPlaying = true;
+        let index = 0;
+        const tourHotspots = hotspotData.filter(h => h.imageIndex === currentImageIndex);
+        
+        if (tourHotspots.length === 0) {
+          isTourPlaying = false;
+          return;
+        }
+
+        tourInfo.textContent = `Guided tour: ${tourHotspots.length} stops in ${images[currentImageIndex].title}`;
+        tourInfo.style.display = "block";
+        
+        function nextHotspot() {
+          if (!isTourPlaying || index >= tourHotspots.length) {
+            isTourPlaying = false;
+            tourInfo.style.display = "none";
+            return;
+          }
+          
+          const hotspot = tourHotspots[index];
+          
+          // Show current stop info
+          tourInfo.textContent = `Stop ${index + 1}/${tourHotspots.length}: ${hotspot.name}`;
+          
+          if (typeof TWEEN !== 'undefined') {
+            new TWEEN.Tween({ lon: lon, lat: lat })
+              .to({ lon: hotspot.lon, lat: hotspot.lat }, 2000)
+              .easing(TWEEN.Easing.Quadratic.InOut)
+              .onUpdate(({ lon: newLon, lat: newLat }) => {
+                lon = newLon;
+                lat = newLat;
+              })
+              .onComplete(() => {
+                setTimeout(() => {
+                  index++;
+                  nextHotspot();
+                }, 3000);
+              })
+              .start();
+          } else {
+            // Fallback without TWEEN
+            setTimeout(() => {
+              index++;
+              nextHotspot();
+            }, 3000);
+          }
+        }
+        
+        nextHotspot();
+      }
+
+      function stopGuidedTour() {
+        isTourPlaying = false;
+        tourInfo.style.display = "none";
+        if (typeof TWEEN !== 'undefined') {
+          TWEEN.removeAll();
+        }
+      }
+    </script>
+  </body>
+</html>
