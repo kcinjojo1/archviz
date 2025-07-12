@@ -3,66 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hamilton Virtual Tour</title>
+    <title>Toronto Virtual Tour</title>
     <link rel="stylesheet" href="../static/css/styles.css" />
   </head>
   <body>
     <div id="home">
-      <h1>🏛️ Hamilton Virtual Tour</h1>
-      <div id="map">
-        <div class="map-area downtown-area" onclick="startTour()">
-          <div>
-            <div>🚀 START</div>
-            <div>VIRTUAL TOUR</div>
-          </div>
-        </div>
-        <div class="map-legend">
-          <div class="legend-item">
-            <div
-              class="legend-color"
-              style="background: linear-gradient(45deg, #e74c3c, #c0392b)"
-            ></div>
-            <span>Historic Landmarks</span>
-          </div>
-          <div class="legend-item">
-            <div
-              class="legend-color"
-              style="background: linear-gradient(45deg, #27ae60, #2ecc71)"
-            ></div>
-            <span>Parks & Nature</span>
-          </div>
-          <div class="legend-item">
-            <div
-              class="legend-color"
-              style="background: linear-gradient(45deg, #8e44ad, #9b59b6)"
-            ></div>
-            <span>Heritage Sites</span>
-          </div>
-          <div class="legend-item">
-            <div
-              class="legend-color"
-              style="background: linear-gradient(45deg, #3498db, #2980b9)"
-            ></div>
-            <span>Waterfront</span>
-          </div>
+      <h1>🍁 Toronto Virtual Tour</h1>
+      <p class="intro-text">
+        Explore the vibrant heart of Toronto, from the iconic CN Tower to the stunning waterfront. 
+        Immerse yourself in 360° views of the city's rich culture, modern skyline, and historic landmarks.
+      </p>
+      <div class="map-area downtown-area" onclick="startTour()">
+        <div>
+          <div>🚀 START VIRTUAL TOUR</div>
         </div>
       </div>
+      <p class="map-description">
+        Explore historic landmarks, parks, nature, heritage sites, and waterfront
+      </p>
       <button class="area-btn" onclick="startTour()">
-        🌟 Begin Your Hamilton Adventure
+        🌟 Begin Your Toronto Adventure
       </button>
-      <p
-        style="
-          text-align: center;
-          color: rgba(255, 255, 255, 0.8);
-          margin-top: 20px;
-          font-size: 16px;
-        "
-      >
-        Discover Hamilton's rich history, stunning waterfront, and vibrant
-        culture through immersive 360° experiences
+      <p class="footer-text">
+        Discover Toronto's dynamic energy and iconic sights in an immersive virtual experience
       </p>
     </div>
     <div id="viewer" style="display: none">
+      <div id="compass">
+        <div class="compass-outer">
+          <div class="compass-inner" id="compass-inner">
+            <div class="compass-direction north">N</div>
+            <div class="compass-direction south">S</div>
+            <div class="compass-direction east">E</div>
+            <div class="compass-direction west">W</div>
+            <div class="compass-needle"></div>
+          </div>
+        </div>
+      </div>
       <div id="controls">
         <button onclick="playGuidedTour()">▶️ Guided Tour</button>
         <button onclick="stopGuidedTour()">⏹️ Stop</button>
