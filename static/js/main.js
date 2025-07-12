@@ -33,6 +33,11 @@ const images = [
     hotspots: [],
     title: "Billy Bishop Airport",
   },
+  {
+    url: "/static/images/fort_york.jpg",
+    hotspots: [],
+    title: "Fort York"
+  },  
 ];
 
 const hotspotData = [
@@ -60,12 +65,94 @@ const hotspotData = [
     targetLon: 0,
     targetLat: 0,
   },
+  {
+    id: 3,
+    name: "Fort York",
+    category: "heritage",
+    lon: 217,      // 👈 You can adjust this to place the hotspot visually
+    lat: -15,       // 👈 You can tweak this too
+    imageIndex: 0, // Assuming it's placed in the same view as CN Tower
+    info: "Fort York is an early‑19th‑century military fortification in Toronto, featuring stone‑lined earthworks and eight historic buildings, part of the Fort York National Historic Site.",
+    targetImageIndex: 3, // index in images array
+    targetLon: 0,
+    targetLat: 0,
+  },  
+  {
+    id: 4,
+    name: "Greenwood Residence",
+    category: "heritage",  // or use "landmarks", "nature", etc. based on your filter toggle
+    lon: 198,
+    lat: -1,
+    imageIndex: 0, // Assuming this pointer appears on CN Tower scene
+    info: "Greenwood Residence offers eco-friendly living with solar panels, rainwater harvesting, and energy-efficient architecture for sustainable urban life.",
+    targetImageIndex: 3, // Navigate to fort_york.jpg
+    targetLon: 0,
+    targetLat: 0,
+  },
+  {
+    id: 5,
+    name: "EcoView Towers",
+    category: "heritage",
+    lon: 187,
+    lat: -6,
+    imageIndex: 0,
+    info: "EcoView Towers leads the way in sustainable high-rise living, with smart HVAC, green rooftops, and reduced carbon emissions for a healthier future.",
+    targetImageIndex: 3,
+    targetLon: 0,
+    targetLat: 0,
+  },
+  {
+    id: 6,
+    name: "Verdant Heights",
+    category: "heritage",
+    lon: 153,
+    lat: -9,
+    imageIndex: 0,
+    info: "Verdant Heights blends luxury with sustainability—solar panels, water recycling, and energy-efficient design make it the smart choice for future-focused homeowners.",
+    targetImageIndex: 3,
+    targetLon: 15,
+    targetLat: 5,
+  },
+  {
+    id: 7,
+    name: "Solaris Plaza",
+    category: "heritage",
+    lon: 140,
+    lat: -2,
+    imageIndex: 0,
+    info: "Solaris Plaza offers next-gen commercial spaces with green certification, passive cooling, and unbeatable utility savings—an ideal space for eco-conscious businesses.",
+    targetImageIndex: 3,
+    targetLon: -10,
+    targetLat: -5,
+  },
+  {
+    id: 8,
+    name: "Aurora Residences",
+    category: "heritage",
+    lon: 128,
+    lat: -4,
+    imageIndex: 0,
+    info: "Aurora Residences redefine modern living with green walls, smart lighting, and rainwater harvesting—designed for buyers who value both comfort and the planet.",
+    targetImageIndex: 3,
+    targetLon: 25,
+    targetLat: 10,
+  },    
 ];
 
 // Inject hotspots into corresponding image objects
 hotspotData.forEach((hotspot) => {
   images[hotspot.imageIndex].hotspots.push(hotspot);
 });
+
+function updateCompass() {
+  const compassNeedle = document.querySelector('.compass-needle');
+  if (compassNeedle) {
+    // Convert longitude to compass rotation
+    // lon = 0 should point North, so we need to rotate accordingly
+    const rotation = -lon; // Negative because compass rotates opposite to camera
+    compassNeedle.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+  }
+}
 
 function initViewer() {
   scene = new THREE.Scene();
@@ -107,6 +194,7 @@ function initViewer() {
   }, 5000);
 
   updateHotspots();
+  updateCompass();
   animate();
 }
 
@@ -199,6 +287,14 @@ function createHotspot(hotspot) {
 
   scene.add(sprite);
 
+  const specialTooltip = (
+    hotspot.name === "Fork Yort" ||
+    hotspot.name === "EcoTowers" ||
+    hotspot.name === "Greenwoods"
+  );
+
+  const tooltipClass = specialTooltip ? "tooltip special-tooltip" : "tooltip";
+
   const hotspotUI = document.createElement("div");
   hotspotUI.className = "hotspot-ui-container";
   hotspotUI.innerHTML = `
@@ -208,13 +304,13 @@ function createHotspot(hotspot) {
     </div>
     <div class="hotspot-icon top-right" data-type="documents">
       <div class="icon-circle">📄</div>
-      <div class="tooltip tooltip-above">View ${
-        hotspot.name
-      } Brochure (PDF)</div>
+      <div class="tooltip tooltip-above">View ${hotspot.name} Brochure (PDF)</div>
     </div>
-    <div class="hotspot-icon bottom-left" data-type="photos">
+    <div class="hotspot-icon bottom-left ${hotspot.info ? "has-info" : ""}" data-type="photos">
       <div class="icon-circle">🖼️</div>
-      <div class="tooltip">${hotspot.name} Description & Images</div>
+      <div class="${tooltipClass}">
+        ${hotspot.info ? hotspot.info : `${hotspot.name} Description & Images`}
+      </div>
     </div>
     <div class="hotspot-icon bottom-right" data-type="multimedia">
       <div class="icon-circle">▶️</div>
@@ -237,6 +333,7 @@ function createHotspot(hotspot) {
       handleHotspotIconClick(type, hotspot);
     });
   });
+
 
   // Position update function
   function updateHotspotUIPosition() {
@@ -285,6 +382,7 @@ function handleHotspotIconClick(type, hotspot) {
         lat = hotspot.targetLat ?? 0;
         loadCurrentImage();
         updateHotspots();
+        updateCompass();
       }
       break;
   }
@@ -312,6 +410,8 @@ function onMouseMove(event) {
 
   lastMouseX = event.clientX;
   lastMouseY = event.clientY;
+  
+  updateCompass();
 }
 
 function onMouseUp(event) {
@@ -343,6 +443,8 @@ function onTouchMove(event) {
 
   lastMouseX = event.touches[0].clientX;
   lastMouseY = event.touches[0].clientY;
+  
+  updateCompass();
 }
 
 function onTouchEnd(event) {
@@ -397,6 +499,7 @@ function changeImage(direction) {
 
   loadCurrentImage();
   updateHotspots();
+  updateCompass();
 
   tourInfo.textContent = `Now viewing: ${images[currentImageIndex].title}`;
   tourInfo.style.display = "block";
@@ -468,6 +571,7 @@ function playGuidedTour() {
         .onUpdate(({ lon: newLon, lat: newLat }) => {
           lon = newLon;
           lat = newLat;
+          updateCompass();
         })
         .onComplete(() => {
           setTimeout(() => {
@@ -505,9 +609,11 @@ function rotateTo180() {
       .easing(TWEEN.Easing.Quadratic.InOut)
       .onUpdate(({ lon: newLon }) => {
         lon = newLon;
+        updateCompass();
       })
       .start();
   } else {
     lon = targetLon;
+    updateCompass();
   }
 }
