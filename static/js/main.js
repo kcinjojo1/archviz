@@ -19,22 +19,22 @@ let lastMouseX = 0,
 
 const images = [
   {
-    url: "/static/images/DJI_0633.JPG",
+    url: STATIC_URLS.DJI_0633,
     hotspots: [],
     title: "CN TOWER",
   },
   {
-    url: "/static/images/img.jpg",
+    url: STATIC_URLS.img,
     hotspots: [],
     title: "Downtown Hamilton View",
   },
   {
-    url: "/static/images/img2.jpg",
+    url: STATIC_URLS.img2,
     hotspots: [],
     title: "Billy Bishop Airport",
   },
   {
-    url: "/static/images/fort_york.jpg",
+    url: STATIC_URLS.fort_york,
     hotspots: [],
     title: "Fort York"
   },  
@@ -69,23 +69,23 @@ const hotspotData = [
     id: 3,
     name: "Fort York",
     category: "heritage",
-    lon: 217,      // 👈 You can adjust this to place the hotspot visually
-    lat: -15,       // 👈 You can tweak this too
-    imageIndex: 0, // Assuming it's placed in the same view as CN Tower
+    lon: 217,
+    lat: -15,
+    imageIndex: 0,
     info: "Fort York is an early‑19th‑century military fortification in Toronto, featuring stone‑lined earthworks and eight historic buildings, part of the Fort York National Historic Site.",
-    targetImageIndex: 3, // index in images array
+    targetImageIndex: 3,
     targetLon: 0,
     targetLat: 0,
   },  
   {
     id: 4,
     name: "Greenwood Residence",
-    category: "heritage",  // or use "landmarks", "nature", etc. based on your filter toggle
+    category: "heritage",
     lon: 198,
     lat: -1,
-    imageIndex: 0, // Assuming this pointer appears on CN Tower scene
+    imageIndex: 0,
     info: "Greenwood Residence offers eco-friendly living with solar panels, rainwater harvesting, and energy-efficient architecture for sustainable urban life.",
-    targetImageIndex: 3, // Navigate to fort_york.jpg
+    targetImageIndex: 3,
     targetLon: 0,
     targetLat: 0,
   },
@@ -147,9 +147,7 @@ hotspotData.forEach((hotspot) => {
 function updateCompass() {
   const compassNeedle = document.querySelector('.compass-needle');
   if (compassNeedle) {
-    // Convert longitude to compass rotation
-    // lon = 0 should point North, so we need to rotate accordingly
-    const rotation = -lon; // Negative because compass rotates opposite to camera
+    const rotation = -lon;
     compassNeedle.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
   }
 }
@@ -202,9 +200,12 @@ function loadCurrentImage() {
   const geometry = new THREE.SphereGeometry(500, 60, 40);
   geometry.scale(-1, 1, 1);
   const textureLoader = new THREE.TextureLoader();
+  const imageUrl = images[currentImageIndex].url;
+  console.log(`Attempting to load image: ${imageUrl}`); // Debug URL
   textureLoader.load(
-    images[currentImageIndex].url,
+    imageUrl,
     (texture) => {
+      console.log(`Successfully loaded image: ${imageUrl}`);
       const material = new THREE.MeshBasicMaterial({ map: texture });
       if (sphere) {
         scene.remove(sphere);
@@ -213,11 +214,13 @@ function loadCurrentImage() {
       }
       sphere = new THREE.Mesh(geometry, material);
       scene.add(sphere);
-      console.log(`Loaded: ${images[currentImageIndex].title}`);
+      console.log(`Rendered: ${images[currentImageIndex].title}`);
     },
-    undefined,
+    (progress) => {
+      console.log(`Loading progress for ${imageUrl}: ${(progress.loaded / progress.total * 100).toFixed(2)}%`);
+    },
     (error) => {
-      console.error("Error loading texture:", error);
+      console.error(`Error loading image: ${imageUrl}`, error);
       const material = new THREE.MeshBasicMaterial({ color: 0x4a90e2 });
       if (sphere) {
         scene.remove(sphere);
@@ -226,6 +229,7 @@ function loadCurrentImage() {
       }
       sphere = new THREE.Mesh(geometry, material);
       scene.add(sphere);
+      console.log(`Fallback blue material applied for: ${images[currentImageIndex].title}`);
     }
   );
 }
@@ -334,8 +338,6 @@ function createHotspot(hotspot) {
     });
   });
 
-
-  // Position update function
   function updateHotspotUIPosition() {
     const vector = sprite.position.clone();
     vector.project(camera);
@@ -356,24 +358,20 @@ function createHotspot(hotspot) {
 
 function handleHotspotIconClick(type, hotspot) {
   console.log(`Clicked ${type} icon for ${hotspot.name}`);
-
   switch (type) {
     case "notes":
       window.open("https://www.cntower.ca/buy-your-tickets-here", "_blank");
       break;
-
     case "documents":
-      window.open("/static/docs/CN_Tower.pdf", "_blank");
+      console.log(`Opening PDF: ${STATIC_URLS.cn_tower_pdf}`);
+      window.open(STATIC_URLS.cn_tower_pdf, "_blank");
       break;
-
     case "photos":
       alert("Photos feature - coming soon!");
       break;
-
     case "multimedia":
       window.open("https://youtu.be/7XmPxiYfzPE?si=hS_BUadvJPFi9Y82", "_blank");
       break;
-
     case "navigate":
       if (typeof hotspot.targetImageIndex !== "undefined") {
         historyStack.push(currentImageIndex);
@@ -400,17 +398,13 @@ function onMouseDown(event) {
 function onMouseMove(event) {
   if (!isUserInteracting) return;
   event.preventDefault();
-
   const deltaX = event.clientX - lastMouseX;
   const deltaY = event.clientY - lastMouseY;
-
   lon -= deltaX * 0.5;
   lat += deltaY * 0.5;
   lat = Math.max(-85, Math.min(85, lat));
-
   lastMouseX = event.clientX;
   lastMouseY = event.clientY;
-  
   updateCompass();
 }
 
@@ -433,17 +427,13 @@ function onTouchStart(event) {
 function onTouchMove(event) {
   if (!isUserInteracting || event.touches.length !== 1) return;
   event.preventDefault();
-
   const deltaX = event.touches[0].clientX - lastMouseX;
   const deltaY = event.touches[0].clientY - lastMouseY;
-
   lon -= deltaX * 0.5;
   lat += deltaY * 0.5;
   lat = Math.max(-85, Math.min(85, lat));
-
   lastMouseX = event.touches[0].clientX;
   lastMouseY = event.touches[0].clientY;
-  
   updateCompass();
 }
 
@@ -461,21 +451,16 @@ function onMouseWheel(event) {
 
 function animate() {
   requestAnimationFrame(animate);
-
   phi = THREE.MathUtils.degToRad(90 - lat);
   theta = THREE.MathUtils.degToRad(lon);
   camera.position.setFromSphericalCoords(1, phi, theta);
   camera.lookAt(0, 0, 0);
-
   renderer.render(scene, camera);
-
-  // Update hotspot UI positions
   hotspots.forEach((h) => {
     if (h.updatePosition) {
       h.updatePosition();
     }
   });
-
   if (typeof TWEEN !== "undefined") {
     TWEEN.update();
   }
@@ -483,24 +468,18 @@ function animate() {
 
 function changeImage(direction) {
   if (direction === -1 && historyStack.length > 0) {
-    // Go back using history
     currentImageIndex = historyStack.pop();
   } else {
-    // Default circular logic
     currentImageIndex =
       (currentImageIndex + direction + images.length) % images.length;
   }
-
-  // ✅ Reset camera orientation if returning to image index 0
   if (currentImageIndex === 0) {
     lon = 0;
     lat = 0;
   }
-
   loadCurrentImage();
   updateHotspots();
   updateCompass();
-
   tourInfo.textContent = `Now viewing: ${images[currentImageIndex].title}`;
   tourInfo.style.display = "block";
   setTimeout(() => {
@@ -509,7 +488,7 @@ function changeImage(direction) {
 }
 
 function startTour() {
-  console.log("Starting Hamilton Virtual Tour");
+  console.log("Starting Toronto Virtual Tour");
   home.style.display = "none";
   viewer.style.display = "block";
   initViewer();
@@ -519,7 +498,6 @@ function goHome() {
   home.style.display = "flex";
   viewer.style.display = "none";
   stopGuidedTour();
-
   if (renderer) {
     viewer.removeChild(renderer.domElement);
     renderer.dispose();
@@ -528,7 +506,6 @@ function goHome() {
     sphere.geometry.dispose();
     sphere.material.dispose();
   }
-
   hotspots.forEach((h) => h.element.remove());
   hotspots = [];
   historyStack = [];
@@ -541,29 +518,23 @@ function playGuidedTour() {
   const tourHotspots = hotspotData.filter(
     (h) => h.imageIndex === currentImageIndex
   );
-
   if (tourHotspots.length === 0) {
     isTourPlaying = false;
     tourInfo.style.display = "none";
     return;
   }
-
   tourInfo.textContent = `Guided tour: ${tourHotspots.length} stops in ${images[currentImageIndex].title}`;
   tourInfo.style.display = "block";
-
   function nextHotspot() {
     if (!isTourPlaying || index >= tourHotspots.length) {
       isTourPlaying = false;
       tourInfo.style.display = "none";
       return;
     }
-
     const hotspot = tourHotspots[index];
-
     tourInfo.textContent = `Stop ${index + 1}/${tourHotspots.length}: ${
       hotspot.name
     }`;
-
     if (typeof TWEEN !== "undefined") {
       new TWEEN.Tween({ lon: lon, lat: lat })
         .to({ lon: hotspot.lon, lat: hotspot.lat }, 2000)
@@ -587,7 +558,6 @@ function playGuidedTour() {
       }, 3000);
     }
   }
-
   nextHotspot();
 }
 
@@ -602,7 +572,6 @@ function stopGuidedTour() {
 function rotateTo180() {
   const delta = 180;
   const targetLon = lon + delta;
-
   if (typeof TWEEN !== "undefined") {
     new TWEEN.Tween({ lon: lon })
       .to({ lon: targetLon }, 2000)
