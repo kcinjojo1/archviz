@@ -13,7 +13,6 @@ html {
 #home {
   width: 100%;
   height: 100%;
-  background-image: url('../images/background_image.jpg');
   background-size: cover;
   background-position: center;
   display: flex;
@@ -90,7 +89,7 @@ html {
   width: 20%;
   height: 10%;
   background: linear-gradient(45deg, #003087, #005cbf);
-  font-size: 24px; /* Increase for bigger text */
+  font-size: 24px;
   white-space: nowrap;
 }
 .area-btn {
@@ -110,8 +109,6 @@ html {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
   background: linear-gradient(45deg, #005cbf, #0073e6);
 }
-
-/* Compass Styles */
 #compass {
   position: absolute;
   top: 180px;
@@ -444,7 +441,6 @@ html {
 .hotspot-icon:hover .tooltip {
   opacity: 1;
 }
-/* Mobile responsiveness for compass */
 @media (max-width: 768px) {
   #compass {
     top: 100px;
