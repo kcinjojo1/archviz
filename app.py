@@ -11,9 +11,7 @@ def hello():
         "img2": url_for('static', filename='images/img2.jpg'),
         "fort_york": url_for('static', filename='images/fort_york.jpg'),
         "cn_tower_pdf": url_for('static', filename='docs/CN_Tower.pdf'),
-        "background_image": url_for('static', filename='images/background_image.jpg')
+        "background_image": url_for('static', filename='images/background_image.jpg'),
+        "DJI_0639": url_for('static', filename='images/DJI_0639.JPG'),  # Add DJI_0639
     }
     return render_template("index.html", image_urls=image_urls)
-
-if __name__ == "__main__":
-    app.run(debug=False, host='0.0.0.0', port=10000)
