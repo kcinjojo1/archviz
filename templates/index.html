@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -5,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Toronto Virtual Tour</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
       #home {
         background-image: url('{{ image_urls.background_image }}');
@@ -20,7 +22,7 @@
       </p>
       <div class="map-area downtown-area" onclick="startTour()">
         <div>
-          <div>START VIRTUAL TOUR</div>
+          <div>🚀 START VIRTUAL TOUR</div>
         </div>
       </div>
       <p class="map-description">
@@ -33,70 +35,103 @@
         Discover Toronto's dynamic energy and iconic sights in an immersive virtual experience
       </p>
     </div>
+    
     <div id="viewer" style="display: none">
-      <div id="compass">
-        <div class="compass-outer">
-          <div class="compass-inner" id="compass-inner">
-            <div class="compass-direction north">S</div>
-            <div class="compass-direction south">N</div>            
-            <div class="compass-direction east">E</div>
-            <div class="compass-direction west">W</div>
-            <div class="compass-needle"></div>
+      <div id="viewer-container">
+        <div id="panorama-section">
+          <div id="compass">
+            <div class="compass-outer">
+              <div class="compass-inner" id="compass-inner">
+                <div class="compass-direction north">S</div>
+                <div class="compass-direction south">N</div>            
+                <div class="compass-direction east">E</div>
+                <div class="compass-direction west">W</div>
+                <div class="compass-needle"></div>
+              </div>
+            </div>
+          </div>
+          <div id="controls">
+            <button id="hamburger-btn" onclick="toggleControlsMenu()">☰</button>
+            <div id="controls-menu">
+              <button onclick="playGuidedTour()">▶️ Guided Tour</button>
+              <button onclick="stopGuidedTour()">⏹️ Stop</button>
+              <button onclick="goHome()">🏠 Home</button>
+              <button onclick="changeImage(-1)">⬅️ Previous</button>
+              <button onclick="changeImage(1)">➡️ Next</button>
+              <button onclick="rotateTo180()">🔄 Rotate</button>
+              <button onclick="viewFromHere()">🌆 TOWER VIEW</button>
+            </div>
+          </div>
+          <div id="filters">
+            <label>
+              <input
+                type="checkbox"
+                id="landmarks"
+                checked
+                onchange="updateHotspots()"
+              />
+              🏛️ Historic Landmarks
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                id="nature"
+                checked
+                onchange="updateHotspots()"
+              />
+              🌳 Parks & Nature
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                id="heritage"
+                checked
+                onchange="updateHotspots()"
+              />
+              🏰 Heritage Sites
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                id="waterfront"
+                checked
+                onchange="updateHotspots()"
+              />
+              🌊 Waterfront
+            </label>
+          </div>
+          <div id="tour-info" class="tour-info">
+            Click and drag to look around • Scroll to zoom • Click hotspots for information
+          </div>
+        </div>
+        
+        <div id="map-section">
+          <div id="map-header">
+            <h3>🗺️ Toronto Map</h3>
+            <button id="toggle-businesses" class="ripple-btn" onclick="toggleRippleRootBusinesses()">
+              Show RippleRoot Businesses
+            </button>
+          </div>
+          <div id="interactive-map"></div>
+          <div id="map-legend">
+            <div class="legend-item">
+              <span class="legend-marker landmark"></span>
+              <span>Landmarks</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-marker heritage"></span>
+              <span>Heritage Sites</span>
+            </div>
+            <div class="legend-item ripple-legend" style="display: none;">
+              <span class="legend-marker business"></span>
+              <span>RippleRoot Businesses</span>
+            </div>
           </div>
         </div>
       </div>
-      <div id="controls">
-        <button onclick="playGuidedTour()">▶️ Guided Tour</button>
-        <button onclick="stopGuidedTour()">⏹️ Stop</button>
-        <button onclick="goHome()">🏠 Home</button>
-        <button onclick="changeImage(-1)">⬅️ Previous</button>
-        <button onclick="changeImage(1)">➡️ Next</button>
-        <button onclick="rotateTo180()">🔄 Rotate</button>
-      </div>
-      <div id="filters">
-        <label>
-          <input
-            type="checkbox"
-            id="landmarks"
-            checked
-            onchange="updateHotspots()"
-          />
-          🏛️ Historic Landmarks
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            id="nature"
-            checked
-            onchange="updateHotspots()"
-          />
-          🌳 Parks & Nature
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            id="heritage"
-            checked
-            onchange="updateHotspots()"
-          />
-          🏰 Heritage Sites
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            id="waterfront"
-            checked
-            onchange="updateHotspots()"
-          />
-          🌊 Waterfront
-        </label>
-      </div>
-      <div id="tour-info" class="tour-info">
-        Click and drag to look around • Scroll to zoom • Click hotspots for
-        information
-      </div>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <script>
