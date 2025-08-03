@@ -1,3 +1,4 @@
+/* global THREE, TWEEN, L, STATIC_URLS */
 
 // ===== GLOBAL VARIABLES =====
 const viewer = document.getElementById("viewer");
@@ -24,6 +25,9 @@ let lon = 0, lat = 0, phi = 0, theta = 0;
 let isUserInteracting = false;
 let lastMouseX = 0, lastMouseY = 0;
 
+// Business markers layer group
+let businessMarkersLayer = null;
+
 // ===== IMAGE DATA =====
 const images = [
   {
@@ -47,11 +51,10 @@ const images = [
     title: "Fort York"
   },  
   {
-    url: STATIC_URLS.DJI_0639, // Add DJI_0639 image
-    hotspots: [], // Add hotspots if needed in the future
+    url: STATIC_URLS.DJI_0639,
+    hotspots: [],
     title: "CN Tower Alternate View",
   },
- 
 ];
 
 // ===== HOTSPOT DATA =====
@@ -152,7 +155,6 @@ const hotspotData = [
     targetLon: 25,
     targetLat: 10,
   },
-      
 ];
 
 // ===== INITIALIZATION =====
@@ -209,7 +211,7 @@ function setupEventListeners() {
   window.addEventListener("resize", updateRendererSize);
   renderer.domElement.addEventListener("mousedown", (event) => {
     onMouseDown(event);
-    document.getElementById('controls-menu').classList.remove('active'); // Close menu on interaction
+    document.getElementById('controls-menu').classList.remove('active');
   });
   renderer.domElement.addEventListener("mousemove", onMouseMove);
   renderer.domElement.addEventListener("mouseup", onMouseUp);
@@ -217,7 +219,7 @@ function setupEventListeners() {
   renderer.domElement.addEventListener("wheel", onMouseWheel);
   renderer.domElement.addEventListener("touchstart", (event) => {
     onTouchStart(event);
-    document.getElementById('controls-menu').classList.remove('active'); // Close menu on touch
+    document.getElementById('controls-menu').classList.remove('active');
   });
   renderer.domElement.addEventListener("touchmove", onTouchMove);
   renderer.domElement.addEventListener("touchend", onTouchEnd);
@@ -492,6 +494,9 @@ function initMap() {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
+  // Initialize business markers layer
+  businessMarkersLayer = L.layerGroup().addTo(map);
+
   // Add landmark markers
   addLandmarkMarkers();
 }
@@ -529,13 +534,6 @@ function updateMapMarkers() {
   console.log('Map markers updated for current view');
 }
 
-function navigateToHotspotById(hotspotId) {
-  const hotspot = hotspotData.find(h => h.id === hotspotId);
-  if (hotspot) {
-    navigateToHotspot(hotspot);
-  }
-}
-
 function toggleRippleRootBusinesses() {
   rippleBusinessesVisible = !rippleBusinessesVisible;
   const button = document.getElementById('toggle-businesses');
@@ -554,39 +552,87 @@ function toggleRippleRootBusinesses() {
   }
 }
 
-function addBusinessMarkers() {
-  const businesses = [
-    { name: "RippleRoot Cafe", lat: 43.6435, lng: -79.3880 },
-    { name: "Tech Hub Downtown", lat: 43.6448, lng: -79.3850 },
-    { name: "Green Office Space", lat: 43.6410, lng: -79.3890 }
-  ];
-  
-  businesses.forEach(business => {
-    const marker = L.marker([business.lat, business.lng], {
-      icon: L.divIcon({
-        className: 'custom-marker-icon business-marker',
-        html: `<div style="width: 16px; height: 16px; background: #f39c12; border-radius: 50%; border: 2px solid white;"></div>`,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
-      })
-    }).addTo(map);
+async function addBusinessMarkers() {
+  try {
+    const response = await fetch('/api/businesses?paymentMode=rippleroot');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
     
-    marker.bindPopup(`
-      <div style="text-align: center;">
-        <h4 style="margin: 5px 0; color: #f39c12;">${business.name}</h4>
-        <p style="margin: 5px 0; font-size: 12px;">RippleRoot Partner Business</p>
+    // Clear existing business markers
+    removeBusinessMarkers();
+
+    // Add new markers
+    data.businesses.forEach(business => {
+      const marker = L.marker([business.location.coordinates[1], business.location.coordinates[0]], {
+        icon: L.divIcon({
+          className: 'custom-marker-icon business-marker',
+          html: `<div style="width: 16px; height: 16px; background: #f39c12; border-radius: 50%; border: 2px solid white;"></div>`,
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
+        })
+      }).addTo(businessMarkersLayer);
+      
+      marker.bindPopup(`
+        <div style="text-align: center;">
+          <h4 style="margin: 5px 0; color: #f39c12;">${business.name}</h4>
+          <p style="margin: 5px 0; font-size: 12px;">${business.location.type} - RippleRoot Partner</p>
+          <p style="margin: 5px 0; font-size: 12px;">Payments: ${business.modes_of_payment.join(', ')}</p>
+          <button onclick="generateCoupon(${business.id}, '${business.name}')" 
+                  style="background: #28a745; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
+            Generate Coupon
+          </button>
+        </div>
+      `);
+    });
+  } catch (error) {
+    console.error('Error fetching businesses:', error);
+    alert('Failed to load RippleRoot businesses. Please try again.');
+  }
+}
+
+async function generateCoupon(businessId, businessName) {
+  try {
+    const response = await fetch('/api/coupons/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ business_id: businessId })
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to generate coupon');
+    }
+    
+    // Display barcode in a popup
+    const popup = document.createElement('div');
+    popup.className = 'coupon-popup';
+    popup.innerHTML = `
+      <div style="position: relative; padding: 20px; background: white; border-radius: 8px; text-align: center;">
+        <h3>Coupon for ${businessName}</h3>
+        <p>Coupon Code: ${data.coupon.code}</p>
+        <img src="${data.coupon.barcode_url}" alt="Coupon Barcode" style="max-width: 200px;">
+        <p>Check your email for the barcode link!</p>
+        <button onclick="this.parentElement.parentElement.remove()" 
+                style="background: #003087; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
+          Close
+        </button>
       </div>
-    `);
-  });
+    `;
+    document.body.appendChild(popup);
+  } catch (error) {
+    console.error('Error generating coupon:', error);
+    alert(`Failed to generate coupon: ${error.message}`);
+  }
 }
 
 function removeBusinessMarkers() {
-  map.eachLayer(layer => {
-    if (layer.options && layer.options.icon && 
-        layer.options.icon.options.className === 'custom-marker-icon business-marker') {
-      map.removeLayer(layer);
-    }
-  });
+  if (businessMarkersLayer) {
+    businessMarkersLayer.clearLayers();
+  }
 }
 
 // ===== MOUSE AND TOUCH EVENTS =====
@@ -836,10 +882,10 @@ function rotateTo180() {
 }
 
 function viewFromHere() {
-  historyStack.push(currentImageIndex); // Save current image to history
-  currentImageIndex = images.findIndex(image => image.url === STATIC_URLS.DJI_0639); // Find index of DJI_0639
-  lon = 180; // Rotate view to face the city side
-  lat = 0;   // Reset vertical view
+  historyStack.push(currentImageIndex);
+  currentImageIndex = images.findIndex(image => image.url === STATIC_URLS.DJI_0639);
+  lon = 180;
+  lat = 0;
   loadCurrentImage();
   updateHotspots();
   updateCompass();
