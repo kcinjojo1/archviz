@@ -15,6 +15,11 @@
   </head>
   <body>
     <div id="home">
+      <div style="position: absolute; top: 20px; right: 20px;">
+        <form action="{{ url_for('logout') }}" method="get">
+          <button type="submit" class="logout-btn">Logout</button>
+        </form>
+      </div>
       <h1>🍁 Toronto Virtual Tour</h1>
       <p class="intro-text">
         Explore the vibrant heart of Toronto, from the iconic CN Tower to the stunning waterfront. 
@@ -22,7 +27,7 @@
       </p>
       <div class="map-area downtown-area" onclick="startTour()">
         <div>
-          <div>🚀 START VIRTUAL TOUR</div>
+          <div class="padding" >🚀 START VIRTUAL TOUR</div>
         </div>
       </div>
       <p class="map-description">
