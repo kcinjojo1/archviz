@@ -861,7 +861,7 @@ html {
 }
 
 /* Mobile responsiveness */
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   #viewer-container {
     flex-direction: column;
   }
@@ -1083,3 +1083,4 @@ html {
     max-width: 120px;
   }
 }
+ */
